@@ -1,801 +1,239 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#0f0f1a">
-<title>위치에너지 모의실험</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --bg: #0f0f1a;
-    --surface: #1a1a2e;
-    --surface2: #16213e;
-    --accent-blue: #4a9eff;
-    --accent-green: #4ade80;
-    --accent-purple: #a78bfa;
-    --accent-orange: #fb923c;
-    --text: #e2e8f0;
-    --text-muted: #94a3b8;
-    --border: rgba(255,255,255,0.08);
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Noto Sans KR', sans-serif;
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  .stars {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    pointer-events: none; z-index: 0;
-    background: radial-gradient(ellipse at 20% 50%, rgba(74,158,255,0.05) 0%, transparent 60%),
-                radial-gradient(ellipse at 80% 20%, rgba(167,139,250,0.05) 0%, transparent 60%);
-  }
-
-  .app {
-    position: relative; z-index: 1;
-    max-width: 900px; margin: 0 auto;
-    padding: 16px;
-    display: flex; flex-direction: column; gap: 14px;
-  }
-
-  header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 12px 16px;
-    background: var(--surface);
-    border-radius: 16px;
-    border: 1px solid var(--border);
-  }
-
-  .header-title { font-size: 17px; font-weight: 700; letter-spacing: -0.3px; }
-  .header-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; font-family: 'Space Mono', monospace; }
-
-  .badge {
-    background: rgba(74,158,255,0.15);
-    border: 1px solid rgba(74,158,255,0.3);
-    color: var(--accent-blue);
-    font-size: 11px; font-weight: 700;
-    padding: 4px 10px; border-radius: 20px;
-    font-family: 'Space Mono', monospace;
-  }
-
-  .main-grid {
-    display: grid;
-    grid-template-columns: 1fr 280px;
-    gap: 14px;
-  }
-
-  @media (max-width: 700px) {
-    .main-grid { grid-template-columns: 1fr; }
-    .sidebar { order: -1; }
-  }
-
-  .canvas-card {
-    background: var(--surface);
-    border-radius: 16px;
-    border: 1px solid var(--border);
-    overflow: hidden;
-    position: relative;
-  }
-
-  canvas {
-    display: block;
-    width: 100%;
-    touch-action: none;
-  }
-
-  .sidebar {
-    display: flex; flex-direction: column; gap: 12px;
-  }
-
-  .card {
-    background: var(--surface);
-    border-radius: 16px;
-    border: 1px solid var(--border);
-    padding: 14px;
-  }
-
-  .card-title {
-    font-size: 11px; font-weight: 700;
-    color: var(--text-muted);
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    margin-bottom: 12px;
-  }
-
-  .energy-grid { display: flex; flex-direction: column; gap: 10px; }
-
-  .energy-row { display: flex; flex-direction: column; gap: 5px; }
-
-  .energy-header {
-    display: flex; justify-content: space-between; align-items: center;
-  }
-
-  .energy-name { font-size: 13px; font-weight: 500; }
-  .energy-formula { font-size: 11px; color: var(--text-muted); font-family: 'Space Mono', monospace; }
-  .energy-value { font-size: 14px; font-weight: 700; font-family: 'Space Mono', monospace; }
-
-  .bar-track {
-    height: 6px; border-radius: 3px;
-    background: rgba(255,255,255,0.06);
-    overflow: hidden;
-  }
-
-  .bar-fill {
-    height: 100%; border-radius: 3px;
-    transition: width 0.04s linear;
-  }
-
-  .divider { height: 1px; background: var(--border); margin: 4px 0; }
-
-  .controls-grid { display: flex; flex-direction: column; gap: 12px; }
-
-  .ctrl { display: flex; flex-direction: column; gap: 6px; }
-
-  .ctrl-header {
-    display: flex; justify-content: space-between; align-items: center;
-  }
-
-  .ctrl-label { font-size: 13px; color: var(--text-muted); }
-
-  .ctrl-val {
-    font-size: 13px; font-weight: 700;
-    font-family: 'Space Mono', monospace;
-    color: var(--text);
-  }
-
-  input[type=range] {
-    -webkit-appearance: none;
-    width: 100%; height: 4px;
-    border-radius: 2px;
-    background: rgba(255,255,255,0.1);
-    outline: none;
-    cursor: pointer;
-  }
-
-  input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 20px; height: 20px;
-    border-radius: 50%;
-    background: var(--accent-blue);
-    box-shadow: 0 0 0 3px rgba(74,158,255,0.2);
-    cursor: pointer;
-  }
-
-  .btn-row { display: flex; gap: 8px; }
-
-  button {
-    flex: 1;
-    padding: 12px 8px;
-    border-radius: 12px;
-    border: 1px solid var(--border);
-    background: var(--surface2);
-    color: var(--text);
-    font-family: 'Noto Sans KR', sans-serif;
-    font-size: 14px; font-weight: 700;
-    cursor: pointer;
-    transition: all 0.15s;
-    display: flex; align-items: center; justify-content: center; gap: 6px;
-  }
-
-  button:active { transform: scale(0.96); background: rgba(255,255,255,0.05); }
-
-  button.primary {
-    background: rgba(74,158,255,0.15);
-    border-color: rgba(74,158,255,0.4);
-    color: var(--accent-blue);
-  }
-
-  button.danger {
-    background: rgba(251,146,60,0.12);
-    border-color: rgba(251,146,60,0.3);
-    color: var(--accent-orange);
-  }
-
-  .info-grid {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
-  }
-
-  .info-cell {
-    background: var(--surface2);
-    border-radius: 10px;
-    padding: 10px;
-    border: 1px solid var(--border);
-  }
-
-  .info-cell-label { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
-  .info-cell-val { font-size: 16px; font-weight: 700; font-family: 'Space Mono', monospace; }
-
-  .formula-box {
-    background: var(--surface2);
-    border-radius: 12px;
-    border: 1px solid var(--border);
-    padding: 12px 14px;
-    display: flex; flex-direction: column; gap: 6px;
-  }
-
-  .formula-line {
-    font-size: 13px;
-    font-family: 'Space Mono', monospace;
-    color: var(--text-muted);
-    line-height: 1.6;
-  }
-
-  .formula-line span { font-weight: 700; }
-
-  .planet-btns {
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
-    margin-bottom: 4px;
-  }
-
-  .planet-btn {
-    padding: 8px 4px; font-size: 12px; font-weight: 700;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    background: var(--surface2);
-    color: var(--text-muted);
-    cursor: pointer;
-    transition: all 0.15s;
-    flex: none;
-  }
-
-  .planet-btn.active {
-    border-color: rgba(167,139,250,0.5);
-    background: rgba(167,139,250,0.12);
-    color: var(--accent-purple);
-  }
-
-  .conservation-indicator {
-    display: flex; align-items: center; gap: 8px;
-    padding: 8px 12px;
-    border-radius: 10px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    font-size: 12px;
-  }
-
-  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-
-  .overlay-msg {
-    position: absolute;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    text-align: center;
-    pointer-events: none;
-  }
-
-  .overlay-msg .big { font-size: 36px; margin-bottom: 4px; }
-  .overlay-msg .small { font-size: 13px; color: var(--text-muted); }
-
-  .trail-toggle {
-    display: flex; align-items: center; gap: 8px;
-    font-size: 13px; color: var(--text-muted);
-    cursor: pointer;
-  }
-
-  .toggle-switch {
-    width: 36px; height: 20px; border-radius: 10px;
-    background: rgba(255,255,255,0.1);
-    position: relative; transition: background 0.2s;
-    flex-shrink: 0;
-  }
-
-  .toggle-switch.on { background: rgba(74,158,255,0.5); }
-
-  .toggle-switch::after {
-    content: '';
-    position: absolute; top: 3px; left: 3px;
-    width: 14px; height: 14px; border-radius: 50%;
-    background: white; transition: left 0.2s;
-  }
-
-  .toggle-switch.on::after { left: 19px; }
-</style>
+    <meta charset="UTF-8">
+    <title>승빈쌤의 시뮬레이션 실험</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        body { margin: 0; padding: 20px; font-family: 'Malgun Gothic', sans-serif; display: flex; flex-direction: column; align-items: center; background-color: #f4f7f6; }
+        .main-wrapper { display: flex; gap: 20px; align-items: flex-start; max-width: 1400px; }
+        canvas { border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); background: #fff; }
+        .side-panel { display: flex; flex-direction: column; gap: 20px; width: 350px; }
+        .panel { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .panel-title { font-size: 16px; font-weight: bold; color: #34495e; margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 5px; }
+        .control-group { margin-bottom: 12px; display: flex; flex-direction: column; }
+        .label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        label { font-size: 13px; font-weight: bold; color: #555; }
+        .value-span { font-family: 'Courier New', monospace; font-weight: bold; color: #e67e22; font-size: 14px; }
+        input[type=range] { width: 100%; cursor: pointer; }
+        .btn-group { display: flex; gap: 10px; margin-top: 15px; }
+        button { flex: 1; padding: 12px; cursor: pointer; border: none; border-radius: 8px; font-weight: bold; color: white; transition: background 0.2s; }
+        .btn-launch { background: #3498db; }
+        .btn-reset { background: #95a5a6; }
+        .data-panel { background: #2c3e50; color: white; }
+        .energy-info { font-size: 14px; margin-bottom: 8px; display: flex; justify-content: space-between; }
+        .total-energy { font-size: 16px; font-weight: bold; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; margin-top: 10px; }
+        .height-info { font-size: 18px; color: #FFEB3B; font-weight: bold; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;}
+    </style>
 </head>
 <body>
-<div class="stars"></div>
-<div class="app">
 
-  <header>
-    <div>
-      <div class="header-title">⚡ 위치에너지 모의실험</div>
-      <div class="header-sub">Ep = mgh &nbsp;|&nbsp; Ek = ½mv²</div>
+    <h2>승빈쌤의 시뮬레이션 실험: 역학적에너지 보존</h2>
+    
+    <div class="main-wrapper">
+        <div id="canvas-container"></div>
+        <div class="side-panel">
+            <div class="panel data-panel">
+                <div class="panel-title">실시간 측정 데이터</div>
+                <div class="energy-info height-info"><span>현재 높이 (\(h\))</span> <span><span id="h-txt">0.0</span> m</span></div>
+                <div class="energy-info"><span style="color:#f1c40f">● 위치 에너지 (\(E_p\))</span> <span id="pe-txt">0</span> J</div>
+                <div class="energy-info"><span style="color:#2ecc71">● 운동 에너지 (\(E_k\))</span> <span id="ke-txt">0</span> J</div>
+                <div class="energy-info"><span style="color:#e74c3c">● 손실 에너지 (\(E_{loss}\))</span> <span id="le-txt">0</span> J</div>
+                <div class="energy-info total-energy"><span>역학적 에너지 합 (\(E_p+E_k\))</span> <span id="te-txt">0</span> J</div>
+            </div>
+
+            <div class="panel controls">
+                <div class="panel-title">물리 환경 설정</div>
+                <div class="control-group">
+                    <div class="label-row"><label>초기 속력 \(v_0\) (m/s)</label><span id="v0-val" class="value-span">60</span></div>
+                    <input type="range" id="v0-slider" min="10" max="100" step="1" value="60">
+                </div>
+                <div class="control-group">
+                    <div class="label-row"><label>질량 \(m\) (kg)</label><span id="m-val" class="value-span">10</span></div>
+                    <input type="range" id="m-slider" min="1" max="100" step="1" value="10">
+                </div>
+                <div class="control-group">
+                    <div class="label-row"><label>중력가속도 \(g\)</label><span id="g-val" class="value-span">9.8</span></div>
+                    <input type="range" id="g-slider" min="1" max="100" step="0.5" value="9.8">
+                </div>
+                <div class="control-group">
+                    <div class="label-row"><label>공기저항 계수 \(k\)</label><span id="k-val" class="value-span">0.000</span></div>
+                    <input type="range" id="k-slider" min="0" max="0.5" step="0.001" value="0.000">
+                </div>
+                <div class="control-group">
+                    <div class="label-row"><label>섬광 간격 (s)</label><span id="strobe-val" class="value-span">0.20</span></div>
+                    <input type="range" id="strobe-slider" min="0.05" max="1.0" step="0.01" value="0.20">
+                </div>
+                <div class="btn-group">
+                    <button class="btn-launch" onclick="launch()">발사하기</button>
+                    <button class="btn-reset" onclick="resetSim()">초기화</button>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="badge">물리 실험실</div>
-  </header>
-
-  <div class="main-grid">
-
-    <div class="canvas-card">
-      <canvas id="simCanvas"></canvas>
-    </div>
-
-    <div class="sidebar">
-
-      <div class="card">
-        <div class="card-title">에너지 현황</div>
-        <div class="energy-grid">
-          <div class="energy-row">
-            <div class="energy-header">
-              <div>
-                <div class="energy-name" style="color:var(--accent-blue)">위치에너지 Ep</div>
-                <div class="energy-formula">= mgh</div>
-              </div>
-              <div class="energy-value" id="peVal" style="color:var(--accent-blue)">0 J</div>
-            </div>
-            <div class="bar-track"><div class="bar-fill" id="peFill" style="background:var(--accent-blue);width:100%"></div></div>
-          </div>
-
-          <div class="energy-row">
-            <div class="energy-header">
-              <div>
-                <div class="energy-name" style="color:var(--accent-green)">운동에너지 Ek</div>
-                <div class="energy-formula">= ½mv²</div>
-              </div>
-              <div class="energy-value" id="keVal" style="color:var(--accent-green)">0 J</div>
-            </div>
-            <div class="bar-track"><div class="bar-fill" id="keFill" style="background:var(--accent-green);width:0%"></div></div>
-          </div>
-
-          <div class="divider"></div>
-
-          <div class="energy-row">
-            <div class="energy-header">
-              <div>
-                <div class="energy-name" style="color:var(--accent-purple)">역학적 에너지 E</div>
-                <div class="energy-formula">= Ep + Ek</div>
-              </div>
-              <div class="energy-value" id="totalVal" style="color:var(--accent-purple)">0 J</div>
-            </div>
-            <div class="bar-track"><div class="bar-fill" id="totalFill" style="background:var(--accent-purple);width:100%"></div></div>
-          </div>
-
-          <div class="energy-row" id="lossRow">
-            <div class="energy-header">
-              <div>
-                <div class="energy-name" style="color:var(--accent-orange)">손실 에너지</div>
-                <div class="energy-formula">공기저항</div>
-              </div>
-              <div class="energy-value" id="lossVal" style="color:var(--accent-orange)">0 J</div>
-            </div>
-            <div class="bar-track"><div class="bar-fill" id="lossFill" style="background:var(--accent-orange);width:0%"></div></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">실시간 데이터</div>
-        <div class="info-grid">
-          <div class="info-cell">
-            <div class="info-cell-label">높이 h</div>
-            <div class="info-cell-val" id="hDisplay" style="color:var(--accent-blue)">0.0 m</div>
-          </div>
-          <div class="info-cell">
-            <div class="info-cell-label">속도 v</div>
-            <div class="info-cell-val" id="vDisplay" style="color:var(--accent-green)">0.0 m/s</div>
-          </div>
-          <div class="info-cell">
-            <div class="info-cell-label">낙하 시간</div>
-            <div class="info-cell-val" id="tDisplay" style="color:var(--accent-purple)">0.00 s</div>
-          </div>
-          <div class="info-cell">
-            <div class="info-cell-label">에너지 보존율</div>
-            <div class="info-cell-val" id="conservDisplay" style="color:var(--accent-orange)">100%</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">🪐 행성 선택</div>
-        <div class="planet-btns">
-          <button class="planet-btn active" onclick="setPlanet('지구',9.8,this)">🌍 지구<br><span style="font-size:10px;opacity:0.7">9.8 m/s²</span></button>
-          <button class="planet-btn" onclick="setPlanet('달',1.62,this)">🌙 달<br><span style="font-size:10px;opacity:0.7">1.62 m/s²</span></button>
-          <button class="planet-btn" onclick="setPlanet('화성',3.72,this)">🔴 화성<br><span style="font-size:10px;opacity:0.7">3.72 m/s²</span></button>
-          <button class="planet-btn" onclick="setPlanet('목성',24.8,this)">🟠 목성<br><span style="font-size:10px;opacity:0.7">24.8 m/s²</span></button>
-          <button class="planet-btn" onclick="setPlanet('금성',8.87,this)">🟡 금성<br><span style="font-size:10px;opacity:0.7">8.87 m/s²</span></button>
-          <button class="planet-btn" onclick="setPlanet('토성',10.4,this)">🪐 토성<br><span style="font-size:10px;opacity:0.7">10.4 m/s²</span></button>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">변수 조절</div>
-        <div class="controls-grid">
-          <div class="ctrl">
-            <div class="ctrl-header">
-              <span class="ctrl-label">질량 m (kg)</span>
-              <span class="ctrl-val" id="massOut">5 kg</span>
-            </div>
-            <input type="range" id="massSlider" min="1" max="20" value="5" step="1" oninput="onSlider()">
-          </div>
-          <div class="ctrl">
-            <div class="ctrl-header">
-              <span class="ctrl-label">중력가속도 g</span>
-              <span class="ctrl-val" id="gOut">9.8 m/s²</span>
-            </div>
-            <input type="range" id="gSlider" min="1" max="30" value="9.8" step="0.1" oninput="onSlider()">
-          </div>
-          <div class="ctrl">
-            <div class="ctrl-header">
-              <span class="ctrl-label">초기 높이 h₀ (m)</span>
-              <span class="ctrl-val" id="hOut">10 m</span>
-            </div>
-            <input type="range" id="hSlider" min="2" max="30" value="10" step="0.5" oninput="onSlider()">
-          </div>
-          <div class="ctrl">
-            <div class="ctrl-header">
-              <span class="ctrl-label">공기저항 계수</span>
-              <span class="ctrl-val" id="dragOut">0.00</span>
-            </div>
-            <input type="range" id="dragSlider" min="0" max="0.5" value="0" step="0.01" oninput="onSlider()">
-          </div>
-
-          <label class="trail-toggle" onclick="toggleTrail()">
-            <div class="toggle-switch" id="trailSwitch"></div>
-            <span>다중섬광사진 표시</span>
-          </label>
-          <div class="ctrl" id="strobeCtrl" style="display:none">
-            <div class="ctrl-header">
-              <span class="ctrl-label">섬광 간격 (초)</span>
-              <span class="ctrl-val" id="strobeOut">0.10 s</span>
-            </div>
-            <input type="range" id="strobeSlider" min="0.02" max="0.5" value="0.1" step="0.01" oninput="onStrobeSlider()">
-          </div>
-        </div>
-      </div>
-
-      <div class="btn-row">
-        <button class="primary" id="startBtn" onclick="toggleSim()">▶ 시작</button>
-        <button class="danger" onclick="resetSim()">↺ 초기화</button>
-      </div>
-
-    </div>
-  </div>
-
-  <div class="formula-box">
-    <div class="formula-line"><span style="color:var(--accent-blue)">Ep = mgh</span> &nbsp;·&nbsp; 위치에너지는 높이에 비례</div>
-    <div class="formula-line"><span style="color:var(--accent-green)">Ek = ½mv²</span> &nbsp;·&nbsp; 운동에너지는 속도의 제곱에 비례</div>
-    <div class="formula-line"><span style="color:var(--accent-purple)">E = Ep + Ek = 일정</span> &nbsp;·&nbsp; 역학적 에너지 보존 법칙 (공기저항 없을 때)</div>
-  </div>
-
-</div>
 
 <script>
-const canvas = document.getElementById('simCanvas');
-const ctx = canvas.getContext('2d');
+let y, v, ground, initialEnergy;
+let isMoving = false;
+let totalLoss = 0;
+let history = []; 
+let strobeHistory = []; 
+let simTime = 0, lastStrobeTime = 0;
+// 스케일링 계수 조정: 높이가 충분히 보이도록 캔버스 높이 및 계수 최적화
+const visualScale = 3; 
 
-let running = false, animId = null, showTrail = false;
-let ball = {}, params = {}, elapsed = 0;
-let lost = 0;
-let snapshots = [];      // 다중섬광 스냅샷 [{y, r, t}]
-let strobeInterval = 0.1; // 섬광 간격 (초)
-let lastSnapTime = 0;
-
-function getParams() {
-  return {
-    m: parseFloat(document.getElementById('massSlider').value),
-    g: parseFloat(document.getElementById('gSlider').value),
-    h0: parseFloat(document.getElementById('hSlider').value),
-    drag: parseFloat(document.getElementById('dragSlider').value)
-  };
-}
-
-function resizeCanvas() {
-  const rect = canvas.parentElement.getBoundingClientRect();
-  const w = Math.floor(rect.width);
-  const h = Math.max(320, Math.min(520, Math.floor(w * 0.75)));
-  canvas.width = w;
-  canvas.height = h;
-}
-
-function resetBall() {
-  params = getParams();
-  snapshots = [];
-  lastSnapTime = 0;
-  elapsed = 0;
-  lost = 0;
-  const groundY = canvas.height - 50;
-  const maxH = canvas.height - 100;
-  const scaleY = maxH / params.h0;
-  ball = {
-    x: canvas.width * 0.42,
-    y: groundY - params.h0 * scaleY,
-    vy: 0,
-    scaleY,
-    groundY
-  };
+function setup() {
+    // 상승 과정이 잘 보이도록 캔버스 높이를 800px로 확대
+    let canvas = createCanvas(800, 800);
+    canvas.parent('canvas-container');
+    // 바닥 위치 조정
+    ground = 600;
+    resetSim();
 }
 
 function resetSim() {
-  running = false;
-  cancelAnimationFrame(animId);
-  document.getElementById('startBtn').textContent = '▶ 시작';
-  document.getElementById('startBtn').className = 'primary';
-  resizeCanvas();
-  resetBall();
-  updateUI();
-  drawFrame();
+    y = ground - 20; v = 0; totalLoss = 0; simTime = 0; lastStrobeTime = 0;
+    isMoving = false; history = []; strobeHistory = [];
 }
 
-function updateUI() {
-  const h = Math.max(0, (ball.groundY - ball.y) / ball.scaleY);
-  const v = Math.abs(ball.vy);
-  const PE = params.m * params.g * h;
-  const KE = 0.5 * params.m * v * v;
-  const totalInit = params.m * params.g * params.h0;
-  const total = PE + KE;
-  const consv = totalInit > 0 ? Math.min(100, (total / totalInit) * 100) : 100;
-
-  document.getElementById('peVal').textContent = PE.toFixed(1) + ' J';
-  document.getElementById('keVal').textContent = KE.toFixed(1) + ' J';
-  document.getElementById('totalVal').textContent = total.toFixed(1) + ' J';
-  document.getElementById('lossVal').textContent = Math.max(0, lost).toFixed(1) + ' J';
-  document.getElementById('hDisplay').textContent = h.toFixed(2) + ' m';
-  document.getElementById('vDisplay').textContent = v.toFixed(2) + ' m/s';
-  document.getElementById('tDisplay').textContent = elapsed.toFixed(2) + ' s';
-  document.getElementById('conservDisplay').textContent = consv.toFixed(1) + '%';
-
-  const pct = v => Math.min(100, Math.max(0, (v / totalInit) * 100)).toFixed(1) + '%';
-  document.getElementById('peFill').style.width = pct(PE);
-  document.getElementById('keFill').style.width = pct(KE);
-  document.getElementById('totalFill').style.width = pct(total);
-  document.getElementById('lossFill').style.width = pct(Math.max(0, lost));
-
-  document.getElementById('massOut').textContent = params.m + ' kg';
-  document.getElementById('gOut').textContent = params.g.toFixed(1) + ' m/s²';
-  document.getElementById('hOut').textContent = params.h0 + ' m';
-  document.getElementById('dragOut').textContent = params.drag.toFixed(2);
+function launch() {
+    resetSim();
+    let v0 = parseFloat(document.getElementById('v0-slider').value);
+    let m = parseFloat(document.getElementById('m-slider').value);
+    let g = parseFloat(document.getElementById('g-slider').value);
+    
+    y = ground - 20;
+    v = -v0; // 초기 속도를 m/s 단위로 설정 (위 방향)
+    initialEnergy = 0.5 * m * (v * v); 
+    isMoving = true;
+    strobeHistory.push(y);
 }
 
-function drawFrame() {
-  const cw = canvas.width, ch = canvas.height;
-  ctx.clearRect(0, 0, cw, ch);
+function draw() {
+    background(255);
+    let m = parseFloat(document.getElementById('m-slider').value);
+    let g = parseFloat(document.getElementById('g-slider').value);
+    let k = parseFloat(document.getElementById('k-slider').value);
+    let strobeInterval = parseFloat(document.getElementById('strobe-slider').value);
 
-  ctx.fillStyle = '#0f0f1a';
-  ctx.fillRect(0, 0, cw, ch);
+    // UI 업데이트
+    document.getElementById('v0-val').innerText = document.getElementById('v0-slider').value;
+    document.getElementById('m-val').innerText = m;
+    document.getElementById('g-val').innerText = g.toFixed(1);
+    document.getElementById('k-val').innerText = k.toFixed(3);
+    document.getElementById('strobe-val').innerText = strobeInterval.toFixed(2);
 
-  const groundY = ball.groundY;
-  const scaleY = ball.scaleY;
+    if (isMoving) {
+        let dt = 1/60; 
+        let subSteps = 60; // 정밀 연산
+        let sdt = dt / subSteps;
 
-  // grid lines
-  const steps = 5;
-  for (let i = 0; i <= steps; i++) {
-    const hy = groundY - (params.h0 / steps) * i * scaleY;
-    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-    ctx.setLineDash([4, 6]);
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(0, hy); ctx.lineTo(cw, hy); ctx.stroke();
-    ctx.setLineDash([]);
+        for (let i = 0; i < subSteps; i++) {
+            let airForce = -k * v;
+            // 중력 및 저항 가속도 계산 (m/s^2 단위 유지)
+            let acceleration = g + (airForce / m);
+            
+            totalLoss += Math.abs(airForce * v * sdt);
+            
+            v += acceleration * sdt;
+            // 시각적 스케일링 적용하여 캔버스 좌표 업데이트
+            y += v * sdt * visualScale; 
 
-    const label = ((params.h0 / steps) * i).toFixed(1) + ' m';
-    ctx.fillStyle = 'rgba(148,163,184,0.5)';
-    ctx.font = '11px "Space Mono", monospace';
-    ctx.fillText(label, 6, hy - 4);
+            simTime += sdt;
+            if (simTime - lastStrobeTime >= strobeInterval) {
+                strobeHistory.push(y);
+                lastStrobeTime = simTime;
+            }
 
-    // tick on right axis
-    ctx.fillStyle = 'rgba(74,158,255,0.25)';
-    ctx.fillRect(cw - 4, hy - 1, 4, 2);
-  }
-
-  // ground
-  ctx.fillStyle = '#1a1a2e';
-  ctx.fillRect(0, groundY, cw, ch - groundY);
-  const grad = ctx.createLinearGradient(0, groundY, 0, groundY + 6);
-  grad.addColorStop(0, 'rgba(74,158,255,0.3)');
-  grad.addColorStop(1, 'transparent');
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, groundY, cw, 6);
-
-  // height shadow pillar
-  const h = Math.max(0, (groundY - ball.y) / scaleY);
-  if (h > 0) {
-    ctx.fillStyle = 'rgba(74,158,255,0.04)';
-    ctx.fillRect(ball.x - 30, ball.y, 60, groundY - ball.y);
-    ctx.strokeStyle = 'rgba(74,158,255,0.15)';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([3, 4]);
-    ctx.beginPath(); ctx.moveTo(ball.x, ball.y); ctx.lineTo(ball.x, groundY); ctx.stroke();
-    ctx.setLineDash([]);
-  }
-
-  // 다중섬광사진 — 반투명 공 여러 개
-  if (showTrail && snapshots.length > 0) {
-    const ballR = Math.max(10, Math.min(22, 7 + params.m * 0.7));
-    for (let i = 0; i < snapshots.length; i++) {
-      const s = snapshots[i];
-      const alpha = 0.15 + (i / snapshots.length) * 0.45;
-      // 공 외곽선
-      ctx.beginPath();
-      ctx.arc(ball.x, s.y, s.r, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(167,139,250,${alpha * 0.5})`;
-      ctx.fill();
-      ctx.strokeStyle = `rgba(167,139,250,${alpha})`;
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-      // 시간 레이블
-      if (i % 2 === 0 || snapshots.length <= 6) {
-        ctx.fillStyle = `rgba(167,139,250,${alpha + 0.1})`;
-        ctx.font = '9px "Space Mono", monospace';
-        ctx.fillText(s.t.toFixed(2)+'s', ball.x + s.r + 4, s.y + 4);
-      }
+            // 바닥 정지
+            if (y >= ground - 20) {
+                y = ground - 20;
+                v = 0;
+                isMoving = false;
+                break; 
+            }
+        }
     }
-  }
 
-  // glow under ball
-  const gr2 = ctx.createRadialGradient(ball.x, ball.y, 0, ball.x, ball.y, 30);
-  gr2.addColorStop(0, 'rgba(251,146,60,0.3)');
-  gr2.addColorStop(1, 'transparent');
-  ctx.fillStyle = gr2;
-  ctx.beginPath(); ctx.arc(ball.x, ball.y, 30, 0, Math.PI*2); ctx.fill();
-
-  // ball
-  const r = Math.max(10, Math.min(22, 7 + params.m * 0.7));
-  ctx.beginPath();
-  ctx.arc(ball.x, ball.y, r, 0, Math.PI * 2);
-  ctx.fillStyle = '#fb923c';
-  ctx.fill();
-
-  // ball shine
-  ctx.beginPath();
-  ctx.arc(ball.x - r*0.3, ball.y - r*0.3, r*0.35, 0, Math.PI*2);
-  ctx.fillStyle = 'rgba(255,255,255,0.3)';
-  ctx.fill();
-
-  // labels next to ball
-  const lx = ball.x + r + 8;
-  ctx.fillStyle = 'rgba(148,163,184,0.85)';
-  ctx.font = '12px "Space Mono", monospace';
-  ctx.fillText('h=' + h.toFixed(2) + 'm', lx, ball.y + 4);
-  ctx.fillText('v=' + Math.abs(ball.vy).toFixed(2) + ' m/s', lx, ball.y + 18);
-
-  // energy mini-chart (right side)
-  drawMiniChart(cw, ch);
-}
-
-function drawMiniChart(cw, ch) {
-  if (!window.energyLog || window.energyLog.length < 2) return;
-  const log = window.energyLog.slice(-100);
-  const mx = cw - 10, my = 10, mw = 80, mh = 60;
-  const totalInit = params.m * params.g * params.h0;
-
-  ctx.fillStyle = 'rgba(26,26,46,0.8)';
-  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-  ctx.lineWidth = 0.5;
-  ctx.beginPath();
-  ctx.roundRect(mx - mw, my, mw, mh, 6);
-  ctx.fill(); ctx.stroke();
-
-  const drawLine = (key, color) => {
-    ctx.beginPath();
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1.5;
-    for (let i = 0; i < log.length; i++) {
-      const px = (mx - mw) + (i / log.length) * mw;
-      const pv = Math.min(1, log[i][key] / totalInit);
-      const py = my + mh - pv * mh;
-      i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+    // 물리적 높이 계산 (m 단위)
+    let currentH = Math.max(0, (ground - 20 - y) / visualScale);
+    let Ep = m * g * currentH;
+    let Ek = 0.5 * m * (v * v);
+    
+    // 에너지 오차 보정 (k=0일 때)
+    if (k === 0 && isMoving) {
+        Ek = Math.max(0, initialEnergy - Ep);
     }
-    ctx.stroke();
-  };
 
-  drawLine('PE', '#4a9eff');
-  drawLine('KE', '#4ade80');
-  drawLine('total', '#a78bfa');
+    if (isMoving) {
+        history.push({ep: Ep, ek: Ek, total: Ep + Ek});
+    }
 
-  ctx.fillStyle = 'rgba(148,163,184,0.6)';
-  ctx.font = '9px "Space Mono", monospace';
-  ctx.fillText('에너지', mx - mw + 4, my + 10);
+    // --- 시뮬레이션 드로잉 영역 (상단) ---
+    let simAreaH = ground + 20;
+    fill(248, 249, 250); noStroke(); rect(0, 0, width, simAreaH);
+    
+    // ** 10m 간격 높이 선 및 텍스트 그리기 **
+    stroke(220); strokeWeight(1); drawingContext.setLineDash([5, 5]); // 점선 설정
+    fill(150); textAlign(RIGHT, CENTER); textSize(11); noStroke();
+    
+    for (let h_grid = 0; h_grid <= 200; h_grid += 10) {
+        let y_grid = ground - 20 - (h_grid * visualScale);
+        if (y_grid < 15) continue; // 화면 최상단 경계
+        
+        // 점선
+        stroke(220); drawingContext.setLineDash([5, 5]);
+        line(100, y_grid, width - 100, y_grid);
+        
+        // 높이 수치 텍스트
+        noStroke();
+        text(h_grid + " m", 90, y_grid);
+    }
+    drawingContext.setLineDash([]); // 점선 해제
+
+    // 바닥선
+    stroke(189, 195, 199); strokeWeight(3); line(100, ground, width - 100, ground);
+    
+    // 섬광 사진
+    noStroke(); fill(52, 152, 219, 60);
+    strobeHistory.forEach(pos => ellipse(width/2, pos, 25));
+    // 현재 공
+    fill(52, 152, 219); ellipse(width/2, y, 30);
+
+    // --- 에너지 그래프 영역 (하단) ---
+    // 시뮬레이션 공간 확대로 그래프 위치 하향 조정
+    let gx = 80, gy = 620, gw = width - 160, gh = 160;
+    fill(255); stroke(220); strokeWeight(1); rect(gx, gy, gw, gh, 5);
+    
+    if (history.length > 1) {
+        let maxE = initialEnergy;
+        let vScale = gh / (maxE * 1.1);
+        let hScale = gw / history.length;
+
+        noFill(); strokeWeight(2);
+        // Ep (Yellow)
+        stroke(241, 196, 15); beginShape();
+        history.forEach((d, i) => vertex(gx + i * hScale, gy + gh - d.ep * vScale));
+        endShape();
+        // Ek (Green)
+        stroke(46, 204, 113); beginShape();
+        history.forEach((d, i) => vertex(gx + i * hScale, gy + gh - d.ek * vScale));
+        endShape();
+        // Total (Blue)
+        stroke(52, 152, 219); strokeWeight(3); beginShape();
+        history.forEach((d, i) => vertex(gx + i * hScale, gy + gh - d.total * vScale));
+        endShape();
+    }
+
+    // --- 데이터 표시 업데이트 ---
+    document.getElementById('h-txt').innerText = currentH.toFixed(1);
+    document.getElementById('pe-txt').innerText = Ep.toFixed(0);
+    document.getElementById('ke-txt').innerText = Ek.toFixed(0);
+    document.getElementById('le-txt').innerText = totalLoss.toFixed(0);
+    document.getElementById('te-txt').innerText = (Ep + Ek).toFixed(0);
 }
-
-window.energyLog = [];
-
-const DT = 0.005; // 고정 물리 타임스텝 (5ms) — 오일러 오차 최소화
-let lastTime = null;
-let accumulator = 0;
-
-function step(ts) {
-  if (!running) return;
-  if (!lastTime) lastTime = ts;
-  // 실제 경과시간을 누적, 최대 100ms로 제한 (탭 전환 등 대비)
-  const frameTime = Math.min((ts - lastTime) / 1000, 0.1);
-  lastTime = ts;
-  accumulator += frameTime;
-
-  // 고정 DT로 물리를 여러 번 반복해 누적 오차 제거
-  while (accumulator >= DT) {
-    const dragF = params.drag * ball.vy * ball.vy * Math.sign(ball.vy);
-    const ay = params.g - dragF / params.m;
-    ball.vy += ay * DT;
-    ball.y += ball.vy * ball.scaleY * DT;
-    elapsed += DT;
-    accumulator -= DT;
-  }
-  const dt = frameTime; // UI용 (elapsed에는 이미 반영됨)
-
-  const h = (ball.groundY - ball.y) / ball.scaleY;
-  // 다음 스텝에 바닥에 닿을 것으로 예측되면 현재 위치에서 멈춤
-  const nextY = ball.y + ball.vy * ball.scaleY * DT;
-  if (h <= 0 || nextY >= ball.groundY) {
-    running = false;
-    document.getElementById('startBtn').textContent = '▶ 다시 시작';
-    document.getElementById('startBtn').className = 'primary';
-  }
-
-  const totalInit = params.m * params.g * params.h0;
-  const PE = params.m * params.g * Math.max(0, h);
-  const KE = 0.5 * params.m * ball.vy * ball.vy;
-  lost = totalInit - PE - KE;
-  window.energyLog.push({ PE, KE, total: PE + KE });
-  if (window.energyLog.length > 300) window.energyLog.shift();
-
-  // 다중섬광 스냅샷 기록
-  if (showTrail && elapsed - lastSnapTime >= strobeInterval) {
-    const r = Math.max(10, Math.min(22, 7 + params.m * 0.7));
-    snapshots.push({ y: ball.y, r, t: elapsed });
-    lastSnapTime = elapsed;
-  }
-
-  updateUI();
-  drawFrame();
-
-  if (running) animId = requestAnimationFrame(step);
-}
-
-function toggleSim() {
-  if (running) {
-    running = false;
-    lastTime = null;
-    accumulator = 0;
-    cancelAnimationFrame(animId);
-    document.getElementById('startBtn').textContent = '▶ 계속';
-    document.getElementById('startBtn').className = 'primary';
-  } else {
-    if (ball.y >= ball.groundY - 2) { resetBall(); updateUI(); }
-    running = true;
-    lastTime = null;
-    accumulator = 0;
-    document.getElementById('startBtn').textContent = '⏸ 일시정지';
-    animId = requestAnimationFrame(step);
-  }
-}
-
-function onSlider() {
-  params = getParams();
-  document.getElementById('massOut').textContent = params.m + ' kg';
-  document.getElementById('gOut').textContent = params.g.toFixed(1) + ' m/s²';
-  document.getElementById('hOut').textContent = params.h0 + ' m';
-  document.getElementById('dragOut').textContent = params.drag.toFixed(2);
-  if (!running) resetSim();
-}
-
-function setPlanet(name, g, btn) {
-  document.getElementById('gSlider').value = g;
-  document.querySelectorAll('.planet-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  onSlider();
-}
-
-function toggleTrail() {
-  showTrail = !showTrail;
-  const sw = document.getElementById('trailSwitch');
-  sw.classList.toggle('on', showTrail);
-  document.getElementById('strobeCtrl').style.display = showTrail ? '' : 'none';
-  if (!showTrail) { snapshots = []; lastSnapTime = 0; drawFrame(); }
-}
-
-function onStrobeSlider() {
-  strobeInterval = parseFloat(document.getElementById('strobeSlider').value);
-  document.getElementById('strobeOut').textContent = strobeInterval.toFixed(2) + ' s';
-  snapshots = []; lastSnapTime = 0;
-  if (!running) drawFrame();
-}
-
-window.addEventListener('resize', () => { if (!running) resetSim(); });
-window.addEventListener('load', () => { setTimeout(resetSim, 100); });
 </script>
 </body>
 </html>
