@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>승쌤물리:연직투사운동</title>
+    <title>승쌤물리: 역학적에너지보존</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -35,7 +35,7 @@
 </head>
 <body>
 
-    <h2>승쌤물리:연직투사운동</h2>
+    <h2>승쌤물리: 역학적에너지보존</h2>
     
     <div class="main-display">
         <div id="canvas-container"></div>
@@ -80,14 +80,15 @@
 <script>
 let physH = 0, physV = 0;
 let isMoving = false, isPaused = false;
-let simTime = 0, lastStrobeTime = 0, maxPhysH = 0, maxV2 = 0;
+let initialEnergy = 0, simTime = 0, lastStrobeTime = 0;
 let history = [], strobeHistory = [];
 let currentViewScale = 10.0;
 let selectedIdx = -1;
 
+const k = 0; 
 let motionWidth = 550, graphWidth = 550;
 let totalCanvasWidth = motionWidth + graphWidth + 20;
-let canvasHeight = 700, groundY = 630; // 그래프가 2개이므로 높이 재조정
+let canvasHeight = 700, groundY = 650;
 
 function setup() {
     let canvas = createCanvas(totalCanvasWidth, canvasHeight);
@@ -97,7 +98,6 @@ function setup() {
 
 function resetSim() {
     physH = 0; physV = 0; simTime = 0; lastStrobeTime = 0;
-    maxPhysH = 0; maxV2 = 0;
     isMoving = false; isPaused = false;
     history = []; strobeHistory = [];
     currentViewScale = 10.0;
@@ -110,8 +110,9 @@ function launch() {
     if (isPaused) { togglePause(); return; }
     resetSim();
     let v0 = parseFloat(document.getElementById('v0-slider').value);
+    let m = parseFloat(document.getElementById('m-slider').value);
     physV = v0;
-    maxV2 = v0 * v0;
+    initialEnergy = 0.5 * m * (v0 * v0);
     isMoving = true;
     if(document.getElementById('strobe-enable').checked) strobeHistory.push({h: 0, t: 0});
     document.getElementById('pause-btn').style.display = 'block';
@@ -134,17 +135,18 @@ function mousePressed() {
 
 function draw() {
     background(255);
+    let m = parseFloat(document.getElementById('m-slider').value);
     let g = parseFloat(document.getElementById('g-slider').value);
     let strobeInt = parseFloat(document.getElementById('strobe-slider').value);
     let strobeOn = document.getElementById('strobe-enable').checked;
 
     document.getElementById('v0-val').innerText = document.getElementById('v0-slider').value;
-    document.getElementById('m-val').innerText = document.getElementById('m-slider').value;
+    document.getElementById('m-val').innerText = m;
     document.getElementById('g-val').innerText = g.toFixed(1);
     document.getElementById('strobe-val').innerText = strobeInt.toFixed(2);
 
     if (isMoving && !isPaused) {
-        let dt = 1/60, subSteps = 100, sdt = dt / subSteps;
+        let dt = 1/60, subSteps = 60, sdt = dt / subSteps;
         for (let i = 0; i < subSteps; i++) {
             let acceleration = -g; 
             physV += acceleration * sdt;
@@ -162,13 +164,13 @@ function draw() {
         }
     }
 
-    if (physH > maxPhysH) maxPhysH = physH;
-    let v2 = physV * physV;
-
     let targetScale = (physH * 10.0 > groundY - 100) ? (groundY - 100) / physH : 10.0;
     currentViewScale = lerp(currentViewScale, targetScale, 0.1);
 
-    if (isMoving && !isPaused) history.push({t: simTime, h: physH, v: abs(physV), v2: v2});
+    let Ep = m * g * physH;
+    let Ek = 0.5 * m * (physV * physV);
+    if (isMoving) Ek = Math.max(0, initialEnergy - Ep);
+    if (isMoving && !isPaused) history.push({t: simTime, ep: Ep, ek: Ek, h: physH});
 
     // --- A. 왼쪽 영역: 운동 모습 ---
     push();
@@ -196,64 +198,59 @@ function draw() {
         stroke(231, 76, 60, 150); strokeWeight(2); drawingContext.setLineDash([5, 2]);
         line(60, targetY, motionWidth - 20, targetY);
         drawingContext.setLineDash([]);
-        fill(231, 76, 60); noStroke(); ellipse(centerX, targetY, 32);
+        fill(231, 76, 60); noStroke();
+        ellipse(centerX, targetY, 32);
         fill(255); textSize(10); textAlign(CENTER, CENTER); text("PICK", centerX, targetY);
     }
+
     fill(52, 152, 219); noStroke(); ellipse(centerX, groundY - (physH * currentViewScale), 28);
     pop();
 
-    // --- B. 오른쪽 영역: 그래프 2개 (에너지 제거 버전) ---
+    // --- B. 오른쪽 영역: 그래프 ---
     push();
     translate(motionWidth + 20, 0);
     fill(255); noStroke(); rect(0, 0, graphWidth, canvasHeight, 0, 12, 12, 0);
+    let gx = 70, gy = 100, gw = graphWidth - 110, gh = canvasHeight - 200;
+    stroke(200); strokeWeight(1); fill(250); rect(gx, gy, gw, gh, 8);
     
-    let gx = 70, gw = graphWidth - 110, gh = 220; // 높이 확대
-    let hScale = history.length > 0 ? gw / history.length : 0;
-    let mx = mouseX - (motionWidth + 20);
-    let currIdx = (selectedIdx !== -1) ? selectedIdx : (mx > gx && mx < gx + gw ? floor((mx - gx) / hScale) : -1);
-
-    // 1. 상단: 높이 그래프
-    let gy1 = 70;
-    stroke(200); fill(250); rect(gx, gy1, gw, gh, 8);
+    // 축 라벨 표시
     noStroke(); fill(100); textSize(12); textAlign(CENTER);
-    text("시간-높이 그래프", gx + gw/2, gy1 - 15);
-    push(); translate(gx - 45, gy1 + gh/2); rotate(-HALF_PI); text("높이 (m)", 0, 0); pop();
-    if (history.length > 1) {
-        let yScale = gh / (maxPhysH * 1.2 || 1);
-        noFill(); stroke(52, 152, 219); strokeWeight(2.5);
-        beginShape(); history.forEach((d, i) => vertex(gx + i * hScale, gy1 + gh - d.h * yScale)); endShape();
-        if (currIdx >= 0 && currIdx < history.length) { stroke(231, 76, 60); line(gx + currIdx * hScale, gy1, gx + currIdx * hScale, gy1 + gh); }
-    }
+    text("시간 (Time, s)", gx + gw/2, gy + gh + 40); // X축 라벨
+    push(); translate(gx - 50, gy + gh/2); rotate(-HALF_PI); text("에너지 (Energy, J)", 0, 0); pop(); // Y축 라벨
+    
+    // 범례 (Legend)
+    textAlign(LEFT, CENTER);
+    fill(241, 196, 15); rect(gx + 10, gy + 15, 12, 12, 2); fill(50); text("위치 에너지 (Ep)", gx + 30, gy + 22);
+    fill(46, 204, 113); rect(gx + 150, gy + 15, 12, 12, 2); fill(50); text("운동 에너지 (Ek)", gx + 170, gy + 22);
 
-    // 2. 하단: 속력² 그래프
-    let gy2 = gy1 + gh + 80;
-    stroke(200); fill(250); rect(gx, gy2, gw, gh, 8);
-    noStroke(); fill(100); text("시간-속력² 그래프", gx + gw/2, gy2 - 15);
-    push(); translate(gx - 45, gy2 + gh/2); rotate(-HALF_PI); text("속력² (m²/s²)", 0, 0); pop();
-    text("시간 (s)", gx + gw/2, gy2 + gh + 35);
     if (history.length > 1) {
-        let v2Scale = gh / (maxV2 * 1.2 || 1);
-        noFill(); stroke(46, 204, 113); strokeWeight(2.5);
-        beginShape(); history.forEach((d, i) => vertex(gx + i * hScale, gy2 + gh - d.v2 * v2Scale)); endShape();
-        if (currIdx >= 0 && currIdx < history.length) { stroke(231, 76, 60); line(gx + currIdx * hScale, gy2, gx + currIdx * hScale, gy2 + gh); }
-    }
-
-    // 데이터 분석 툴팁
-    if (currIdx >= 0 && currIdx < history.length) {
-        let d = history[currIdx];
-        let tipW = 180, tipH = 100;
-        let tx = (gx + currIdx * hScale) + 15, ty = mouseY - tipH / 2;
-        if (tx + tipW > graphWidth) tx = (gx + currIdx * hScale) - tipW - 15;
-        if (ty < 20) ty = 20;
-        if (ty + tipH > canvasHeight - 20) ty = canvasHeight - tipH - 20;
+        let maxE = Math.max(initialEnergy, 100); 
+        let vScale = gh / (maxE * 1.1), hScale = gw / history.length;
         
-        fill(255, 252); stroke(231, 76, 60); rect(tx, ty, tipW, tipH, 8);
-        noStroke(); textAlign(LEFT, TOP); fill(50); textSize(11);
-        let pad = 12;
-        text(`⏱ 시간: ${d.t.toFixed(3)} s`, tx + pad, ty + 12);
-        fill(52, 152, 219); text(`📏 높이(h): ${d.h.toFixed(3)} m`, tx + pad, ty + 35);
-        fill(30, 150, 80); text(`💨 속력(v): ${d.v.toFixed(3)} m/s`, tx + pad, ty + 55);
-        fill(100); text(`⚡ 속력²(v²): ${d.v2.toFixed(3)} m²/s²`, tx + pad, ty + 75);
+        noFill(); strokeWeight(2.5);
+        stroke(241, 196, 15); beginShape(); history.forEach((d, i) => vertex(gx + i * hScale, gy + gh - d.ep * vScale)); endShape();
+        stroke(46, 204, 113); beginShape(); history.forEach((d, i) => vertex(gx + i * hScale, gy + gh - d.ek * vScale)); endShape();
+        
+        let mx = mouseX - (motionWidth + 20);
+        let currIdx = (selectedIdx !== -1) ? selectedIdx : (mx > gx && mx < gx + gw ? floor((mx - gx) / hScale) : -1);
+        
+        if (currIdx >= 0 && currIdx < history.length) {
+            let d = history[currIdx];
+            let xPos = gx + currIdx * hScale;
+            stroke(231, 76, 60); strokeWeight(2); line(xPos, gy, xPos, gy + gh);
+            
+            let tipW = 165, tipH = 90;
+            let tx = xPos + 15, ty = mouseY - tipH / 2;
+            if (tx + tipW > graphWidth) tx = xPos - tipW - 15;
+            
+            fill(255, 250); stroke(231, 76, 60); strokeWeight(1);
+            rect(tx, ty, tipW, tipH, 8);
+            noStroke(); textAlign(LEFT, TOP); textSize(12);
+            fill(50); text(`⏱ 시간: ${d.t.toFixed(2)}s`, tx + 12, ty + 12);
+            fill(180, 140, 0); text(`● 위치(Ep): ${d.ep.toFixed(0)} J`, tx + 12, ty + 32);
+            fill(30, 150, 80); text(`● 운동(Ek): ${d.ek.toFixed(0)} J`, tx + 12, ty + 52);
+            fill(120); textSize(10); text(selectedIdx !== -1 ? "📌 클릭 고정됨" : "🔍 마우스 추적", tx + 12, ty + 72);
+        }
     }
     pop();
 }
