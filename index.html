@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>승쌤물리: 역학적에너지보존</title>
+    <title>연직 투사: 에너지 분석 시뮬레이션</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -11,31 +11,52 @@
         h2 { color: #2c3e50; margin-bottom: 20px; }
         .main-display { display: flex; gap: 20px; align-items: flex-start; margin-bottom: 20px; }
         canvas { border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); background: #fff; cursor: crosshair; }
-        .control-panel { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); width: 1120px; display: flex; flex-direction: column; gap: 15px; }
-        .panel-title { font-size: 16px; font-weight: bold; color: #34495e; margin-bottom: 5px; border-bottom: 2px solid #eee; padding-bottom: 5px; }
-        .sliders-row { display: flex; gap: 30px; justify-content: space-between; flex-wrap: wrap; }
-        .control-group { flex: 1; min-width: 250px; display: flex; flex-direction: column; }
-        .label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        
+        /* 제어 패널 전체 레이아웃 수정 */
+        .control-panel { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); width: 1120px; display: flex; flex-direction: column; gap: 20px; }
+        .panel-title { font-size: 16px; font-weight: bold; color: #34495e; margin-bottom: 5px; border-bottom: 2px solid #eee; padding-bottom: 8px; }
+        
+        /* 상단 슬라이더 열 */
+        .sliders-row { display: flex; gap: 20px; justify-content: space-between; width: 100%; }
+        .control-group { flex: 1; display: flex; flex-direction: column; background: #fafafa; padding: 12px; border-radius: 10px; border: 1px solid #eee; }
+        
+        /* 하단 제어 요소 열 (섬광, 버튼, 공식) */
+        .action-row { display: flex; gap: 20px; justify-content: space-between; align-items: stretch; width: 100%; margin-top: 5px; }
+        
+        /* 개별 블록 스타일 */
+        .action-block { background: #fafafa; padding: 15px; border-radius: 10px; border: 1px solid #eee; display: flex; align-items: center; justify-content: center; }
+        .strobe-block { flex: 1.2; flex-direction: column; gap: 10px; }
+        .button-block { flex: 1.5; gap: 10px; }
+        .formula-block { flex: 1.3; }
+
+        .label-row { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 5px; }
         label { font-size: 13px; font-weight: bold; color: #555; }
-        .value-span { font-family: 'Courier New', monospace; font-weight: bold; color: #e67e22; font-size: 14px; }
+        
+        .num-input { width: 70px; padding: 5px; border: 2px solid #3498db; border-radius: 6px; text-align: right; font-family: 'Courier New', monospace; font-weight: bold; color: #e67e22; font-size: 14px; }
         input[type=range] { width: 100%; cursor: pointer; }
-        .btn-group { display: flex; gap: 10px; margin-top: 5px; width: 350px; }
-        button { flex: 1; padding: 12px; cursor: pointer; border: none; border-radius: 8px; font-weight: bold; color: white; transition: 0.2s; }
+        
+        button { flex: 1; padding: 15px; cursor: pointer; border: none; border-radius: 8px; font-weight: bold; color: white; transition: 0.2s; font-size: 15px; }
         .btn-launch { background: #3498db; }
+        .btn-launch:hover { background: #2980b9; }
         .btn-pause { background: #e67e22; }
         .btn-reset { background: #95a5a6; }
-        .switch-group { display: flex; align-items: center; gap: 10px; }
-        .switch { position: relative; display: inline-block; width: 40px; height: 22px; }
+        
+        .formula-box { display: flex; flex-direction: column; gap: 8px; width: 100%; text-align: center; }
+        .formula-item { font-size: 15px; font-family: 'Courier New', monospace; font-weight: bold; }
+        
+        .switch-group { display: flex; align-items: center; gap: 12px; }
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider-round { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
-        .slider-round:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        .slider-round:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider-round { background-color: #3498db; }
-        input:checked + .slider-round:before { transform: translateX(18px); }
+        input:checked + .slider-round:before { transform: translateX(20px); }
+        .fixed-val { font-size: 14px; font-weight: bold; color: #7f8c8d; }
     </style>
 </head>
 <body>
 
-    <h2>승쌤물리: 역학적에너지보존</h2>
+    <h2>연직 투사: 에너지 분석 시뮬레이션</h2>
     
     <div class="main-display">
         <div id="canvas-container"></div>
@@ -43,61 +64,93 @@
     
     <div class="control-panel">
         <div class="panel-title">변인 설정 및 제어</div>
+        
         <div class="sliders-row">
             <div class="control-group">
-                <div class="label-row"><label>초기 속력 \(v_0\) (m/s)</label><span id="v0-val" class="value-span">15</span></div>
-                <input type="range" id="v0-slider" min="1" max="30" step="1" value="15">
-            </div>
-            <div class="control-group">
-                <div class="label-row"><label>질량 \(m\) (kg)</label><span id="m-val" class="value-span">10</span></div>
-                <input type="range" id="m-slider" min="1" max="100" step="1" value="10">
-            </div>
-            <div class="control-group">
-                <div class="label-row"><label>중력가속도 \(g\)</label><span id="g-val" class="value-span">9.8</span></div>
-                <input type="range" id="g-slider" min="1" max="30" step="0.1" value="9.8">
-            </div>
-            <div class="control-group" style="flex: 1.2; flex-direction: row; gap: 20px; align-items: center;">
-                <div style="display:flex; flex-direction:column; gap:5px;">
-                    <div class="switch-group">
-                        <label class="switch">
-                            <input type="checkbox" id="strobe-enable" checked>
-                            <span class="slider-round"></span>
-                        </label>
-                        <span style="font-size:13px; font-weight:bold; color:#555;">섬광 On/Off</span>
-                    </div>
-                    <div class="label-row" style="margin-top:5px;"><label>간격(s)</label><span id="strobe-val" class="value-span">0.20</span></div>
-                    <input type="range" id="strobe-slider" min="0.05" max="1.0" step="0.05" value="0.20" style="width:120px;">
+                <div class="label-row">
+                    <label>초기 속력 \(v_0\) (m/s)</label>
+                    <input type="number" id="v0-num" class="num-input" min="1" max="100" step="1" value="15">
                 </div>
-                <div class="btn-group">
-                    <button id="launch-btn" class="btn-launch" onclick="launch()">발사</button>
-                    <button id="pause-btn" class="btn-pause" onclick="togglePause()" style="display:none;">일시정지</button>
-                    <button class="btn-reset" onclick="resetSim()">초기화</button>
+                <input type="range" id="v0-slider" min="1" max="100" step="1" value="15">
+            </div>
+            <div class="control-group">
+                <div class="label-row">
+                    <label>질량 \(m\) (kg)</label>
+                    <input type="number" id="m-num" class="num-input" min="1" max="200" step="1" value="10">
+                </div>
+                <input type="range" id="m-slider" min="1" max="200" step="1" value="10">
+            </div>
+            <div class="control-group">
+                <div class="label-row">
+                    <label>중력가속도 \(g\)</label>
+                    <span class="fixed-val">9.8 \(m/s^2\) (고정)</span>
+                </div>
+                <div style="height: 35px; display: flex; align-items: center; color: #95a5a6; font-size: 12px; font-style: italic;">지구 표면 중력 환경</div>
+            </div>
+        </div>
+
+        <div class="action-row">
+            <div class="action-block strobe-block">
+                <div class="switch-group">
+                    <label class="switch">
+                        <input type="checkbox" id="strobe-enable" checked>
+                        <span class="slider-round"></span>
+                    </label>
+                    <span style="font-size:14px; font-weight:bold; color:#555;">섬광 잔상 사용</span>
+                </div>
+                <div class="label-row" style="justify-content: center; gap: 15px;">
+                    <label>간격(s)</label>
+                    <input type="number" id="strobe-num" class="num-input" style="width:60px; height:24px;" min="0.1" max="1" step="0.1" value="0.2">
+                    <input type="range" id="strobe-slider" min="0.1" max="1.0" step="0.1" value="0.2" style="width:150px;">
+                </div>
+            </div>
+
+            <div class="action-block button-block">
+                <button id="launch-btn" class="btn-launch" onclick="launch()">발사하기</button>
+                <button id="pause-btn" class="btn-pause" onclick="togglePause()" style="display:none;">일시정지</button>
+                <button class="btn-reset" onclick="resetSim()">초기화</button>
+            </div>
+
+            <div class="action-block formula-block">
+                <div class="formula-box">
+                    <div class="formula-item" style="color: #b08d1a;">위치 에너지 \(E_p = mgh\)</div>
+                    <div class="formula-item" style="color: #27ae60;">운동 에너지 \(E_k = \frac{1}{2}mv^2\)</div>
                 </div>
             </div>
         </div>
     </div>
 
 <script>
-let physH = 0, physV = 0;
+let physH = 0, physV = 0, initialEnergy = 0;
 let isMoving = false, isPaused = false;
-let initialEnergy = 0, simTime = 0, lastStrobeTime = 0;
+let simTime = 0, lastStrobeTime = 0;
 let history = [], strobeHistory = [];
 let currentViewScale = 10.0;
 let selectedIdx = -1;
+const g = 9.8; 
 
-const k = 0; 
-let motionWidth = 550, graphWidth = 550;
-let totalCanvasWidth = motionWidth + graphWidth + 20;
-let canvasHeight = 700, groundY = 650;
+const motionWidth = 550, graphWidth = 550;
+const canvasWidth = motionWidth + graphWidth + 20;
+const canvasHeight = 720, groundY = 650; 
 
 function setup() {
-    let canvas = createCanvas(totalCanvasWidth, canvasHeight);
+    let canvas = createCanvas(canvasWidth, canvasHeight);
     canvas.parent('canvas-container');
+    
+    const sync = (sId, nId) => {
+        let s = document.getElementById(sId), n = document.getElementById(nId);
+        s.addEventListener('input', () => { n.value = s.value; });
+        n.addEventListener('input', () => { s.value = n.value; });
+    };
+    sync('v0-slider', 'v0-num');
+    sync('m-slider', 'm-num');
+    sync('strobe-slider', 'strobe-num');
+    
     resetSim();
 }
 
 function resetSim() {
-    physH = 0; physV = 0; simTime = 0; lastStrobeTime = 0;
+    physH = 0; physV = 0; simTime = 0; lastStrobeTime = 0; initialEnergy = 0;
     isMoving = false; isPaused = false;
     history = []; strobeHistory = [];
     currentViewScale = 10.0;
@@ -109,12 +162,13 @@ function resetSim() {
 function launch() {
     if (isPaused) { togglePause(); return; }
     resetSim();
-    let v0 = parseFloat(document.getElementById('v0-slider').value);
-    let m = parseFloat(document.getElementById('m-slider').value);
+    let v0 = parseFloat(document.getElementById('v0-num').value) || 15;
+    let m = parseFloat(document.getElementById('m-num').value) || 10;
     physV = v0;
     initialEnergy = 0.5 * m * (v0 * v0);
-    isMoving = true;
+    history.push({t: 0, h: 0, ep: 0, ek: initialEnergy});
     if(document.getElementById('strobe-enable').checked) strobeHistory.push({h: 0, t: 0});
+    isMoving = true;
     document.getElementById('pause-btn').style.display = 'block';
 }
 
@@ -125,31 +179,27 @@ function togglePause() {
 }
 
 function mousePressed() {
-    let gx = motionWidth + 20 + 70;
+    let gxStart = motionWidth + 20 + 70;
     let gw = graphWidth - 110;
-    if (mouseX > gx && mouseX < gx + gw && history.length > 0) {
-        let hScale = gw / history.length;
-        selectedIdx = floor((mouseX - gx) / hScale);
+    if (mouseX >= gxStart && mouseX <= gxStart + gw && history.length > 0) {
+        let hScale = history.length > 1 ? gw / (history.length - 1) : 0;
+        if (hScale > 0) {
+            selectedIdx = round((mouseX - gxStart) / hScale);
+            selectedIdx = constrain(selectedIdx, 0, history.length - 1);
+        } else { selectedIdx = 0; }
     }
 }
 
 function draw() {
     background(255);
-    let m = parseFloat(document.getElementById('m-slider').value);
-    let g = parseFloat(document.getElementById('g-slider').value);
-    let strobeInt = parseFloat(document.getElementById('strobe-slider').value);
+    let m = parseFloat(document.getElementById('m-num').value) || 10;
+    let strobeInt = parseFloat(document.getElementById('strobe-num').value) || 0.2;
     let strobeOn = document.getElementById('strobe-enable').checked;
 
-    document.getElementById('v0-val').innerText = document.getElementById('v0-slider').value;
-    document.getElementById('m-val').innerText = m;
-    document.getElementById('g-val').innerText = g.toFixed(1);
-    document.getElementById('strobe-val').innerText = strobeInt.toFixed(2);
-
     if (isMoving && !isPaused) {
-        let dt = 1/60, subSteps = 60, sdt = dt / subSteps;
+        let dt = 1/60, subSteps = 100, sdt = dt / subSteps;
         for (let i = 0; i < subSteps; i++) {
-            let acceleration = -g; 
-            physV += acceleration * sdt;
+            physV -= g * sdt;
             physH += physV * sdt;
             simTime += sdt;
             if (strobeOn && simTime - lastStrobeTime >= strobeInt) {
@@ -162,95 +212,99 @@ function draw() {
                 break;
             }
         }
+        let currentEp = m * g * physH;
+        let currentEk = max(0, initialEnergy - currentEp);
+        history.push({t: simTime, h: physH, ep: currentEp, ek: currentEk});
     }
 
-    let targetScale = (physH * 10.0 > groundY - 100) ? (groundY - 100) / physH : 10.0;
+    let targetScale = (physH * 10.0 > groundY - 100) ? (groundY - 100) / max(physH, 0.1) : 10.0;
     currentViewScale = lerp(currentViewScale, targetScale, 0.1);
 
-    let Ep = m * g * physH;
-    let Ek = 0.5 * m * (physV * physV);
-    if (isMoving) Ek = Math.max(0, initialEnergy - Ep);
-    if (isMoving && !isPaused) history.push({t: simTime, ep: Ep, ek: Ek, h: physH});
-
-    // --- A. 왼쪽 영역: 운동 모습 ---
     push();
     fill(248, 249, 250); noStroke(); rect(0, 0, motionWidth, canvasHeight, 12, 0, 0, 12);
-    for (let h_grid = 0; h_grid <= 500; h_grid += 10) {
+    stroke(230); strokeWeight(1); textAlign(RIGHT, CENTER); textSize(11);
+    for (let h_grid = 0; h_grid <= 1000; h_grid += 10) {
         let y_pos = groundY - (h_grid * currentViewScale);
         if (y_pos < 30) continue;
-        stroke(235); drawingContext.setLineDash([5, 5]); line(60, y_pos, motionWidth - 20, y_pos);
-        drawingContext.setLineDash([]); noStroke(); fill(180);
-        textAlign(RIGHT, CENTER); textSize(11); text(h_grid + " m", 50, y_pos);
+        drawingContext.setLineDash([5, 5]); line(60, y_pos, motionWidth - 20, y_pos);
+        drawingContext.setLineDash([]); noStroke(); fill(160); text(h_grid + "m", 55, y_pos);
     }
-    stroke(150); strokeWeight(3); line(60, groundY, motionWidth - 20, groundY);
-    
+    stroke(127, 140, 141); strokeWeight(3); line(60, groundY, motionWidth - 20, groundY);
     let centerX = motionWidth / 2 + 20;
     if (strobeOn) {
         noStroke(); fill(52, 152, 219, 40);
         strobeHistory.forEach(s => ellipse(centerX, groundY - (s.h * currentViewScale), 20));
     }
-
-    let activeIdx = (selectedIdx !== -1) ? selectedIdx : (mouseX > motionWidth + 90 ? floor((mouseX - (motionWidth + 90)) / ( (graphWidth-110) / max(1, history.length) )) : -1);
-    
-    if (activeIdx >= 0 && activeIdx < history.length) {
-        let targetH = history[activeIdx].h;
-        let targetY = groundY - (targetH * currentViewScale);
-        stroke(231, 76, 60, 150); strokeWeight(2); drawingContext.setLineDash([5, 2]);
-        line(60, targetY, motionWidth - 20, targetY);
-        drawingContext.setLineDash([]);
-        fill(231, 76, 60); noStroke();
-        ellipse(centerX, targetY, 32);
-        fill(255); textSize(10); textAlign(CENTER, CENTER); text("PICK", centerX, targetY);
+    let activeIdx = -1;
+    let gx = 70, gw = graphWidth - 110;
+    let canvasGx = motionWidth + 20 + gx;
+    if (selectedIdx !== -1) activeIdx = selectedIdx;
+    else if (mouseX >= canvasGx && mouseX <= canvasGx + gw && history.length > 0) {
+        let hScale = history.length > 1 ? gw / (history.length - 1) : 0;
+        activeIdx = hScale > 0 ? round((mouseX - canvasGx) / hScale) : 0;
+        activeIdx = constrain(activeIdx, 0, history.length - 1);
     }
-
+    if (activeIdx >= 0 && activeIdx < history.length) {
+        let hTarget = history[activeIdx].h;
+        let yTarget = groundY - (hTarget * currentViewScale);
+        stroke(231, 76, 60, 180); strokeWeight(2); drawingContext.setLineDash([4, 2]);
+        line(60, yTarget, motionWidth - 20, yTarget);
+        drawingContext.setLineDash([]);
+        fill(231, 76, 60); noStroke(); ellipse(centerX, yTarget, 32);
+        fill(255); textSize(10); textAlign(CENTER, CENTER); text("PICK", centerX, yTarget);
+    }
     fill(52, 152, 219); noStroke(); ellipse(centerX, groundY - (physH * currentViewScale), 28);
     pop();
 
-    // --- B. 오른쪽 영역: 그래프 ---
     push();
     translate(motionWidth + 20, 0);
     fill(255); noStroke(); rect(0, 0, graphWidth, canvasHeight, 0, 12, 12, 0);
-    let gx = 70, gy = 100, gw = graphWidth - 110, gh = canvasHeight - 200;
-    stroke(200); strokeWeight(1); fill(250); rect(gx, gy, gw, gh, 8);
-    
-    // 축 라벨 표시
-    noStroke(); fill(100); textSize(12); textAlign(CENTER);
-    text("시간 (Time, s)", gx + gw/2, gy + gh + 40); // X축 라벨
-    push(); translate(gx - 50, gy + gh/2); rotate(-HALF_PI); text("에너지 (Energy, J)", 0, 0); pop(); // Y축 라벨
-    
-    // 범례 (Legend)
-    textAlign(LEFT, CENTER);
-    fill(241, 196, 15); rect(gx + 10, gy + 15, 12, 12, 2); fill(50); text("위치 에너지 (Ep)", gx + 30, gy + 22);
-    fill(46, 204, 113); rect(gx + 150, gy + 15, 12, 12, 2); fill(50); text("운동 에너지 (Ek)", gx + 170, gy + 22);
-
-    if (history.length > 1) {
-        let maxE = Math.max(initialEnergy, 100); 
-        let vScale = gh / (maxE * 1.1), hScale = gw / history.length;
-        
-        noFill(); strokeWeight(2.5);
-        stroke(241, 196, 15); beginShape(); history.forEach((d, i) => vertex(gx + i * hScale, gy + gh - d.ep * vScale)); endShape();
-        stroke(46, 204, 113); beginShape(); history.forEach((d, i) => vertex(gx + i * hScale, gy + gh - d.ek * vScale)); endShape();
-        
-        let mx = mouseX - (motionWidth + 20);
-        let currIdx = (selectedIdx !== -1) ? selectedIdx : (mx > gx && mx < gx + gw ? floor((mx - gx) / hScale) : -1);
-        
-        if (currIdx >= 0 && currIdx < history.length) {
-            let d = history[currIdx];
-            let xPos = gx + currIdx * hScale;
-            stroke(231, 76, 60); strokeWeight(2); line(xPos, gy, xPos, gy + gh);
-            
-            let tipW = 165, tipH = 90;
-            let tx = xPos + 15, ty = mouseY - tipH / 2;
-            if (tx + tipW > graphWidth) tx = xPos - tipW - 15;
-            
-            fill(255, 250); stroke(231, 76, 60); strokeWeight(1);
-            rect(tx, ty, tipW, tipH, 8);
-            noStroke(); textAlign(LEFT, TOP); textSize(12);
-            fill(50); text(`⏱ 시간: ${d.t.toFixed(2)}s`, tx + 12, ty + 12);
-            fill(180, 140, 0); text(`● 위치(Ep): ${d.ep.toFixed(0)} J`, tx + 12, ty + 32);
-            fill(30, 150, 80); text(`● 운동(Ek): ${d.ek.toFixed(0)} J`, tx + 12, ty + 52);
-            fill(120); textSize(10); text(selectedIdx !== -1 ? "📌 클릭 고정됨" : "🔍 마우스 추적", tx + 12, ty + 72);
-        }
+    let gh = 210;
+    let hScale = history.length > 1 ? gw / (history.length - 1) : 0;
+    let maxE = max(initialEnergy, 100);
+    let yScale = gh / (maxE * 1.2);
+    let gy1 = 70;
+    stroke(200); strokeWeight(1); fill(252); rect(gx, gy1, gw, gh, 8);
+    noStroke(); fill(52, 73, 94); textAlign(CENTER); textSize(13); 
+    text("시간 - 위치 에너지 (E", gx + gw/2 - 10, gy1 - 15);
+    textSize(10); text("p", gx + gw/2 + 52, gy1 - 11);
+    textSize(13); text(")", gx + gw/2 + 60, gy1 - 15);
+    textSize(11); fill(120); text("시간 (s)", gx + gw/2, gy1 + gh + 25);
+    push(); translate(gx - 45, gy1 + gh/2); rotate(-HALF_PI); text("에너지 (J)", 0, 0); pop();
+    if (history.length > 1 && hScale > 0) {
+        noFill(); stroke(241, 196, 15); strokeWeight(3); beginShape();
+        for(let i=0; i<history.length; i++) vertex(gx + i * hScale, gy1 + gh - history[i].ep * yScale);
+        endShape();
+    }
+    if (activeIdx !== -1 && hScale >= 0) { stroke(231, 76, 60, 150); line(gx + activeIdx * hScale, gy1, gx + activeIdx * hScale, gy1 + gh); }
+    let gy2 = gy1 + gh + 85;
+    stroke(200); strokeWeight(1); fill(252); rect(gx, gy2, gw, gh, 8);
+    noStroke(); fill(52, 73, 94); textAlign(CENTER); textSize(13);
+    text("시간 - 운동 에너지 (E", gx + gw/2 - 10, gy2 - 15);
+    textSize(10); text("k", gx + gw/2 + 52, gy2 - 11);
+    textSize(13); text(")", gx + gw/2 + 60, gy2 - 15);
+    textSize(11); fill(120); text("시간 (s)", gx + gw/2, gy2 + gh + 25);
+    push(); translate(gx - 45, gy2 + gh/2); rotate(-HALF_PI); text("에너지 (J)", 0, 0); pop();
+    if (history.length > 1 && hScale > 0) {
+        noFill(); stroke(46, 204, 113); strokeWeight(3); beginShape();
+        for(let i=0; i<history.length; i++) vertex(gx + i * hScale, gy2 + gh - history[i].ek * yScale);
+        endShape();
+    }
+    if (activeIdx !== -1 && hScale >= 0) { stroke(231, 76, 60, 150); line(gx + activeIdx * hScale, gy2, gx + activeIdx * hScale, gy2 + gh); }
+    if (activeIdx !== -1 && activeIdx < history.length) {
+        let d = history[activeIdx];
+        let tipW = 190, tipH = 100;
+        let xPos = gx + (hScale > 0 ? activeIdx * hScale : 0);
+        let tx = xPos + 15, ty = mouseY - tipH/2;
+        if (tx + tipW > graphWidth) tx = xPos - tipW - 15;
+        ty = constrain(ty, 30, canvasHeight - tipH - 30);
+        fill(255, 253); stroke(231, 76, 60); strokeWeight(2); rect(tx, ty, tipW, tipH, 10);
+        noStroke(); textAlign(LEFT, TOP); fill(44, 62, 80); textSize(12);
+        let pad = 15;
+        text(`⏱ 시간: ${d.t.toFixed(3)}s`, tx + pad, ty + 15);
+        fill(180, 140, 0); text("● E", tx + pad, ty + 40); textSize(9); text("p", tx + pad + 25, ty + 44); textSize(12); text(`: ${round(d.ep)}J`, tx + pad + 32, ty + 40);
+        fill(30, 150, 80); text("● E", tx + pad, ty + 65); textSize(9); text("k", tx + pad + 25, ty + 69); textSize(12); text(`: ${round(d.ek)}J`, tx + pad + 32, ty + 65);
+        fill(127, 140, 141); textSize(10); textAlign(CENTER); text(selectedIdx !== -1 ? "📌 클릭 고정됨" : "🔍 추적 중", tx + tipW/2, ty + tipH - 12);
     }
     pop();
 }
